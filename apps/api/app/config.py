@@ -24,9 +24,27 @@ class Settings(BaseSettings):
         return Path(__file__).resolve().parents[3]
 
     @property
+    def data_dir(self) -> Path:
+        return self.project_root / "data"
+
+    @property
     def raw_data_dir(self) -> Path:
-        return self.project_root / "data" / "raw"
+        return self.data_dir / "raw"
+
+    @property
+    def processed_data_dir(self) -> Path:
+        return self.data_dir / "processed"
+
+    @property
+    def metadata_dir(self) -> Path:
+        return self.data_dir / "metadata"
+
+    @property
+    def metadata_file_path(self) -> Path:
+        return self.metadata_dir / "documents.json"
 
 
 settings = Settings()
 settings.raw_data_dir.mkdir(parents=True, exist_ok=True)
+settings.processed_data_dir.mkdir(parents=True, exist_ok=True)
+settings.metadata_dir.mkdir(parents=True, exist_ok=True)

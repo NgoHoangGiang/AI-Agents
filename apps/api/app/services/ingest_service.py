@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List, Dict
 
 from fastapi import HTTPException, UploadFile
 
@@ -45,17 +45,28 @@ class IngestService:
             ) from exc
 
     @staticmethod
+    def normalize_text(content: str) -> str:
+        return content.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    @staticmethod
     def save_raw_file(file_name: str, content: str) -> Path:
         save_path = settings.raw_data_dir / file_name
         save_path.write_text(content, encoding="utf-8")
         return save_path
 
     @staticmethod
-    def ingest_text(file_name: str, extension: str, content: str) -> Tuple[Path, list]:
-        saved_path = IngestService.save_raw_file(file_name=file_name, content=content)
+    def ingest_text(file_name: str, content: str) -> Tuple[Path, List[Dict]]:
+        normalized_content = IngestService.normalize_text(content)
+
+        saved_path = IngestService.save_raw_file(
+            file_name=file_name,
+            content=normalized_content,
+        )
+
         chunks = chunk_text(
-            text=content,
+            text=normalized_content,
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
         )
+
         return saved_path, chunks
