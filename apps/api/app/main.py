@@ -1,7 +1,24 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+from app.config import settings
+from app.routes.health import router as health_router
+from app.routes.documents import router as documents_router
+
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    debug=settings.app_debug,
+)
+
 
 @app.get("/")
-def root():
-    return {"message": "Personal Copilot API is running!"}
+def root() -> dict:
+    return {
+        "message": f"{settings.app_name} is running",
+        "environment": settings.app_env,
+        "version": settings.app_version,
+    }
+
+
+app.include_router(health_router)
+app.include_router(documents_router)
