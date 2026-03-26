@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -51,10 +51,22 @@ class ListDocumentsResponse(BaseModel):
     documents: List[StoredDocumentResponse]
 
 
-class ErrorResponse(BaseModel):
-    detail: str
+class SemanticSearchMatchResponse(BaseModel):
+    document_id: str
+    file_name: str
+    chunk_index: int
+    content: str
+    similarity: float
 
 
-class SearchQueryParams(BaseModel):
+class SemanticSearchResponse(BaseModel):
     query: str
-    limit: Optional[int] = 10
+    total_matches: int
+    matches: List[SemanticSearchMatchResponse]
+
+
+class EmbeddingBuildResponse(BaseModel):
+    total_embedding_records: int
+    embedding_model: str
+    documents_processed: int
+    chunks_processed: int

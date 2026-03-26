@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     app_debug: bool = True
     app_version: str = "0.1.0"
 
+    embedding_model: str = "all-MiniLM-L6-v2"
+
     max_upload_size_mb: int = 10
     chunk_size: int = 800
     chunk_overlap: int = 100
@@ -42,6 +44,10 @@ class Settings(BaseSettings):
     @property
     def metadata_file_path(self) -> Path:
         return self.metadata_dir / "documents.json"
+
+    @property
+    def embeddings_file_path(self) -> Path:
+        return self.processed_data_dir / "embeddings.json"
 
 
 settings = Settings()
