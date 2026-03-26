@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ## 4. Run API
 
 ```bash
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 ## 5. Open API
