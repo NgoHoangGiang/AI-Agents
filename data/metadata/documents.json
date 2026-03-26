@@ -1,0 +1,19 @@
+[
+  {
+    "document_id": "fa0545e8-b3d7-4008-886a-98e1568e4d9d",
+    "file_name": "sample.md",
+    "file_type": ".md",
+    "saved_path": "C:\\Users\\Admin\\Downloads\\AI-Agents\\AI-Agents\\data\\raw\\sample.md",
+    "total_characters": 242,
+    "total_chunks": 1,
+    "uploaded_at": "2026-03-26T04:34:50.208920+00:00",
+    "chunks": [
+      {
+        "chunk_index": 0,
+        "content": "# Sample HLD\n\nThis is a simple internal project document.\n\nBusiness rules:\n- Search is case-insensitive\n- Onclick must open new tab\n\nAcceptance criteria:\n- User can search by segment name\n- System returns matching result in realtime",
+        "start_char": 0,
+        "end_char": 232
+      }
+    ]
+  }
+]
