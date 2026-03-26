@@ -1,2 +1,6 @@
-# AI-Agents
-AI Agents này sẽ hoạt động như Ngô Hoàng Giang, và có thể tốt hơn thế, tận dụng mọi tài nguyên để giải quyết vấn đề
+# Personal BA/DA/QC Copilot - MVP
+
+Repo này dùng để build AI Copilot cá nhân cho việc:
+- hỏi đáp tài liệu nội bộ
+- giải thích SQL/dbt
+- draft checklist/testcase
