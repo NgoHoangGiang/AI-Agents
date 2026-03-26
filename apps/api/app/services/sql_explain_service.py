@@ -4,22 +4,22 @@ from typing import Dict, List
 
 class SqlExplainService:
     JOIN_PATTERN = re.compile(
-        r"\b(?:(LEFT|RIGHT|INNER|FULL|CROSS)\s+)?JOIN\s+([a-zA-Z0-9_.\"]+)(?:\s+[a-zA-Z0-9_\"]+)?\s+ON\s+(.+?)(?=\b(?:LEFT|RIGHT|INNER|FULL|CROSS)?\s*JOIN\b|\bWHERE\b|\bGROUP\s+BY\b|\bORDER\s+BY\b|\bLIMIT\b|$)",
+        r"\b(?:(LEFT|RIGHT|INNER|FULL|CROSS)\s+)?JOIN\s+([a-zA-Z0-9_.\"]+)(?:\s+(?:AS\s+)?[a-zA-Z0-9_\"]+)?\s+ON\s+(.+?)(?=\b(?:LEFT|RIGHT|INNER|FULL|CROSS)?\s*JOIN\b|\bWHERE\b|\bGROUP\s+BY\b|\bORDER\s+BY\b|\bLIMIT\b|\bHAVING\b|$)",
         flags=re.IGNORECASE | re.DOTALL,
     )
 
     FROM_PATTERN = re.compile(
-        r"\bFROM\s+([a-zA-Z0-9_.\"]+)",
+        r"\bFROM\s+([a-zA-Z0-9_.\"]+)(?:\s+(?:AS\s+)?[a-zA-Z0-9_\"]+)?",
         flags=re.IGNORECASE,
     )
 
     WHERE_PATTERN = re.compile(
-        r"\bWHERE\s+(.+?)(?=\bGROUP\s+BY\b|\bORDER\s+BY\b|\bLIMIT\b|$)",
+        r"\bWHERE\s+(.+?)(?=\bGROUP\s+BY\b|\bORDER\s+BY\b|\bLIMIT\b|\bHAVING\b|$)",
         flags=re.IGNORECASE | re.DOTALL,
     )
 
     GROUP_BY_PATTERN = re.compile(
-        r"\bGROUP\s+BY\s+(.+?)(?=\bORDER\s+BY\b|\bLIMIT\b|$)",
+        r"\bGROUP\s+BY\s+(.+?)(?=\bORDER\s+BY\b|\bLIMIT\b|\bHAVING\b|$)",
         flags=re.IGNORECASE | re.DOTALL,
     )
 
@@ -33,6 +33,11 @@ class SqlExplainService:
         flags=re.IGNORECASE | re.DOTALL,
     )
 
+    CTE_PATTERN = re.compile(
+        r"^\s*WITH\s+([a-zA-Z0-9_]+)\s+AS\s*\(",
+        flags=re.IGNORECASE,
+    )
+
     AGG_FUNCTIONS = ["SUM", "COUNT", "AVG", "MIN", "MAX"]
 
     @staticmethod
@@ -42,14 +47,19 @@ class SqlExplainService:
         return sql
 
     @staticmethod
+    def split_csv_like(text: str) -> List[str]:
+        return [part.strip() for part in text.split(",") if part.strip()]
+
+    @staticmethod
     def extract_tables(sql: str) -> List[Dict]:
         tables: List[Dict] = []
+
         from_match = SqlExplainService.FROM_PATTERN.search(sql)
         if from_match:
             tables.append({"name": from_match.group(1).strip()})
 
         join_matches = SqlExplainService.JOIN_PATTERN.findall(sql)
-        for join_type, table, _condition in join_matches:
+        for _join_type, table, _condition in join_matches:
             table_name = table.strip()
             if not any(t["name"] == table_name for t in tables):
                 tables.append({"name": table_name})
@@ -72,11 +82,6 @@ class SqlExplainService:
         return joins
 
     @staticmethod
-    def split_csv_like(text: str) -> List[str]:
-        parts = [part.strip() for part in text.split(",") if part.strip()]
-        return parts
-
-    @staticmethod
     def extract_filters(sql: str) -> List[str]:
         match = SqlExplainService.WHERE_PATTERN.search(sql)
         if not match:
@@ -91,7 +96,6 @@ class SqlExplainService:
         match = SqlExplainService.GROUP_BY_PATTERN.search(sql)
         if not match:
             return []
-
         return SqlExplainService.split_csv_like(match.group(1).strip())
 
     @staticmethod
@@ -99,7 +103,6 @@ class SqlExplainService:
         match = SqlExplainService.ORDER_BY_PATTERN.search(sql)
         if not match:
             return []
-
         return SqlExplainService.split_csv_like(match.group(1).strip())
 
     @staticmethod
@@ -119,6 +122,20 @@ class SqlExplainService:
         return aggregations
 
     @staticmethod
+    def detect_cte(sql: str) -> List[str]:
+        matches = SqlExplainService.CTE_PATTERN.findall(sql)
+        return [match.strip() for match in matches]
+
+    @staticmethod
+    def detect_select_star(sql: str) -> bool:
+        match = SqlExplainService.SELECT_PATTERN.search(sql)
+        if not match:
+            return False
+
+        select_clause = match.group(1).strip()
+        return select_clause == "*" or " * " in f" {select_clause} "
+
+    @staticmethod
     def build_summary(
         tables: List[Dict],
         joins: List[Dict],
@@ -126,42 +143,65 @@ class SqlExplainService:
         group_by: List[str],
         aggregations: List[str],
         order_by: List[str],
+        ctes: List[str],
     ) -> str:
         if not tables:
             return "This SQL query could not be clearly analyzed."
 
-        base = f"This query reads data from {tables[0]['name']}."
+        parts: List[str] = []
+
+        if ctes:
+            parts.append(f"This query defines CTEs: {', '.join(ctes)}.")
+
+        parts.append(f"This query reads data from {tables[0]['name']}.")
+
+        if len(tables) > 1:
+            extra_tables = ", ".join(table["name"] for table in tables[1:])
+            parts.append(f"It also uses related tables: {extra_tables}.")
 
         if joins:
-            joined_tables = ", ".join(join["table"] for join in joins)
-            base += f" It joins additional tables: {joined_tables}."
+            join_types = ", ".join(join["join_type"] for join in joins)
+            parts.append(f"It uses joins ({join_types}).")
 
         if aggregations:
-            base += " It performs aggregations."
+            parts.append(f"It performs aggregations such as: {', '.join(aggregations)}.")
 
         if filters:
-            base += " It applies filtering conditions."
+            parts.append("It applies filtering conditions.")
 
         if group_by:
-            base += " It groups the result set."
+            parts.append(f"It groups the result by: {', '.join(group_by)}.")
 
         if order_by:
-            base += " It sorts the output."
+            parts.append(f"It sorts the output by: {', '.join(order_by)}.")
 
-        return base
+        return " ".join(parts)
 
     @staticmethod
-    def build_warnings(sql: str, tables: List[Dict], joins: List[Dict]) -> List[str]:
+    def build_warnings(
+        sql: str,
+        tables: List[Dict],
+        joins: List[Dict],
+        ctes: List[str],
+    ) -> List[str]:
         warnings: List[str] = []
 
-        if not sql.strip().upper().startswith("SELECT"):
+        normalized_upper = sql.upper()
+
+        if not normalized_upper.startswith("SELECT") and not normalized_upper.startswith("WITH"):
             warnings.append("This endpoint is designed primarily for SELECT queries.")
 
         if not tables:
             warnings.append("No source table was confidently detected.")
 
-        if "SELECT *" in sql.upper():
-            warnings.append("Query uses SELECT *, which may be risky in production analytics queries.")
+        if SqlExplainService.detect_select_star(sql):
+            warnings.append("Query uses SELECT *, which may be risky in analytics or production queries.")
+
+        if ctes:
+            warnings.append("CTE parsing is basic. Review the SQL manually if the logic is complex.")
+
+        if "SUBQUERY" in normalized_upper:
+            warnings.append("Subquery parsing is not fully supported yet.")
 
         for join in joins:
             if not join["condition"]:
@@ -179,6 +219,7 @@ class SqlExplainService:
         group_by = SqlExplainService.extract_group_by(normalized_sql)
         aggregations = SqlExplainService.extract_aggregations(normalized_sql)
         order_by = SqlExplainService.extract_order_by(normalized_sql)
+        ctes = SqlExplainService.detect_cte(normalized_sql)
 
         summary = SqlExplainService.build_summary(
             tables=tables,
@@ -187,12 +228,14 @@ class SqlExplainService:
             group_by=group_by,
             aggregations=aggregations,
             order_by=order_by,
+            ctes=ctes,
         )
 
         warnings = SqlExplainService.build_warnings(
             sql=normalized_sql,
             tables=tables,
             joins=joins,
+            ctes=ctes,
         )
 
         return {
