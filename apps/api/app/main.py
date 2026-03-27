@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.routes.chat import router as chat_router
+from app.routes.checklist import router as checklist_router
 from app.routes.documents import router as documents_router
 from app.routes.health import router as health_router
 from app.routes.sql import router as sql_router
@@ -28,3 +29,4 @@ app.include_router(documents_router)
 app.include_router(chat_router)
 app.include_router(sql_router)
 app.include_router(summarize_router)
+app.include_router(checklist_router)
