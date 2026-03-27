@@ -14,6 +14,17 @@ Repo này dùng để build AI Copilot cá nhân cho việc:
 - Grounded chat on indexed documents
 - SQL explanation endpoint
 
+## Current backend features
+
+- Document ingest
+- Document metadata listing
+- Keyword search
+- Semantic search with local embeddings
+- Grounded chat on indexed documents
+- SQL explanation
+- Document summarization
+- Draft checklist generation
+
 ## Run locally
 
 ```bash

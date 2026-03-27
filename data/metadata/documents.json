@@ -15,5 +15,22 @@
         "end_char": 232
       }
     ]
+  },
+  {
+    "document_id": "9b3b3c63-7085-4543-a8be-6f619bf03d31",
+    "file_name": "sample.md",
+    "file_type": ".md",
+    "saved_path": "C:\\Users\\Admin\\Downloads\\AI-Agents\\AI-Agents\\data\\raw\\sample.md",
+    "total_characters": 242,
+    "total_chunks": 1,
+    "uploaded_at": "2026-03-27T03:49:08.814934+00:00",
+    "chunks": [
+      {
+        "chunk_index": 0,
+        "content": "# Sample HLD\n\nThis is a simple internal project document.\n\nBusiness rules:\n- Search is case-insensitive\n- Onclick must open new tab\n\nAcceptance criteria:\n- User can search by segment name\n- System returns matching result in realtime",
+        "start_char": 0,
+        "end_char": 232
+      }
+    ]
   }
 ]
